@@ -2,7 +2,90 @@
 <html>
 <head>
   <style>
-    /* Your styles here */
+    .node {
+      position: relative;
+      padding: 10px;
+      border: 1px solid #000;
+      border-radius: 10px;
+      margin: 10px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .node button {
+      padding: 5px;
+      margin: 5px;
+      background-color: #009900;
+      color: #ffffff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 12px;
+      width: 25px;
+      height: 25px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .note-title {
+      white-space: pre-wrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+    }
+
+    .note-title span {
+      font-weight: bold;
+      margin-right: 10px;
+    }
+
+    .note-content {
+      border: 1px solid #000;
+      border-radius: 5px;
+      padding: 5px;
+      width: auto;
+      min-width: 100px;
+    }
+
+    .children {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-top: 10px;
+      margin-left: 30px;
+    }
+
+    #controls {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 10px;
+      background: #ccc;
+    }
+    
+    .button-container {
+      display: flex;
+      align-items: center;
+      margin-left: -5px; /* Adjust the value to move the buttons to the left */
+    }
+
+    .button-container button {
+      background-color: #009900;
+      color: #ffffff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      padding: 5px 10px;
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
@@ -15,7 +98,13 @@
   <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
   <script>
     const firebaseConfig = {
-      /* Your Firebase configuration here */
+      apiKey: "AIzaSyDvXCkb2zol2OAkJh5XRgMWCqXZNpuxf8A",
+      authDomain: "note-app-bc1c8.firebaseapp.com",
+      projectId: "note-app-bc1c8",
+      storageBucket: "note-app-bc1c8.appspot.com",
+      messagingSenderId: "137319797999",
+      appId: "1:137319797999:web:7466ab88111aae1a2cb71a",
+      measurementId: "G-CJSPMCTWJT"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -23,17 +112,22 @@
 
     async function loadNotes() {
       const snapshot = await db.collection("notes").get();
-      const notes = snapshot.docs.map(doc => ({id: doc.id, data: doc.data()}));
-      notes.forEach(note => createNoteBlock(note.data.title, document.getElementById("root"), note.id));
+      snapshot.forEach((doc) => {
+        const noteData = doc.data();
+        createNoteBlock(noteData.title, noteData.content, document.getElementById("root"), doc.id);
+      });
     }
 
     async function createRootNoteBlock() {
       const noteText = prompt("Enter your note:");
-      const docRef = await db.collection("notes").add({title: noteText || "New note"});
-      createNoteBlock(noteText || "New note", document.getElementById("root"), docRef.id);
+      const docRef = await db.collection("notes").add({
+        title: noteText || "New note",
+        content: "",
+      });
+      createNoteBlock(noteText || "New note", "", document.getElementById("root"), docRef.id);
     }
 
-    function createNoteBlock(noteText, parentElement, id) {
+    function createNoteBlock(noteTitle, noteContent, parentElement, id) {
       const noteBlock = document.createElement("div");
       noteBlock.id = id;
       noteBlock.classList.add("node");
@@ -42,8 +136,8 @@
           <button onclick="event.stopPropagation(); createRootNoteBlock();">+</button>
           <button onclick="event.stopPropagation(); deleteNoteBlock('${id}');">x</button>
         </div>
-        <div class="note-title" contenteditable="true" onkeydown="handleTitleKeydown(event)" onpaste="handleTitlePaste(event)" onblur="updateTitle('${id}', this.textContent)"><span>${noteText}</span></div>
-        <div class="note-content" contenteditable="true" onblur="updateContent('${id}', this.textContent)"></div>
+        <div class="note-title" contenteditable="true" onkeydown="handleTitleKeydown(event)" onpaste="handleTitlePaste(event)" onblur="updateTitle('${id}', this.textContent)"><span>${noteTitle}</span></div>
+        <div class="note-content" contenteditable="true" onblur="updateContent('${id}', this.textContent)">${noteContent}</div>
         <div class="children"></div>
       `;
 
@@ -63,8 +157,7 @@
       await db.collection("notes").doc(id).update({content: newContent});
     }
 
-    // Call the loadNotes function when the page loads
-    window.onload = loadNotes;
+    loadNotes();
   </script>
 </body>
 </html>
