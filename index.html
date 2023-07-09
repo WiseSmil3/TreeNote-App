@@ -2,90 +2,7 @@
 <html>
 <head>
   <style>
-    .node {
-      position: relative;
-      padding: 10px;
-      border: 1px solid #000;
-      border-radius: 10px;
-      margin: 10px;
-      cursor: pointer;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .node button {
-      padding: 5px;
-      margin: 5px;
-      background-color: #009900;
-      color: #ffffff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      font-size: 12px;
-      width: 25px;
-      height: 25px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .note-title {
-      white-space: pre-wrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: flex;
-      align-items: center;
-    }
-
-    .note-title span {
-      font-weight: bold;
-      margin-right: 10px;
-    }
-
-    .note-content {
-      border: 1px solid #000;
-      border-radius: 5px;
-      padding: 5px;
-      width: auto;
-      min-width: 100px;
-    }
-
-    .children {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      margin-top: 10px;
-      margin-left: 30px;
-    }
-
-    #controls {
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 10px;
-      background: #ccc;
-    }
-    
-    .button-container {
-      display: flex;
-      align-items: center;
-      margin-left: -5px; /* Adjust the value to move the buttons to the left */
-    }
-
-    .button-container button {
-      background-color: #009900;
-      color: #ffffff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-weight: bold;
-      padding: 5px 10px;
-      margin-right: 5px;
-    }
+    /* Your styles here */
   </style>
 </head>
 <body>
@@ -93,46 +10,32 @@
   <div id="controls">
     <button onclick="createRootNoteBlock()">Add Root Note</button>
   </div>
+
   <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
   <script>
-    // Your Firebase configuration
     const firebaseConfig = {
-      apiKey: "AIzaSyDvXCkb2zol2OAkJh5XRgMWCqXZNpuxf8A",
-      authDomain: "note-app-bc1c8.firebaseapp.com",
-      projectId: "note-app-bc1c8",
-      storageBucket: "note-app-bc1c8.appspot.com",
-      messagingSenderId: "137319797999",
-      appId: "1:137319797999:web:7466ab88111aae1a2cb71a",
-      measurementId: "G-CJSPMCTWJT"
+      /* Your Firebase configuration here */
     };
 
-    // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
-
-    // Initialize Firestore
     const db = firebase.firestore();
 
-    // Load notes from Firestore and create elements for them
-    db.collection("notes").get().then((querySnapshot) => {
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        createNoteBlock(data.title, document.getElementById("root"), doc.id);
-      });
-    });
+    async function loadNotes() {
+      const snapshot = await db.collection("notes").get();
+      const notes = snapshot.docs.map(doc => ({id: doc.id, data: doc.data()}));
+      notes.forEach(note => createNoteBlock(note.data.title, document.getElementById("root"), note.id));
+    }
 
-    function createRootNoteBlock() {
+    async function createRootNoteBlock() {
       const noteText = prompt("Enter your note:");
-      db.collection("notes").add({
-        title: noteText || "New note",
-      })
-      .then((docRef) => {
-        createNoteBlock(noteText || "New note", document.getElementById("root"), docRef.id);
-      });
+      const docRef = await db.collection("notes").add({title: noteText || "New note"});
+      createNoteBlock(noteText || "New note", document.getElementById("root"), docRef.id);
     }
 
     function createNoteBlock(noteText, parentElement, id) {
       const noteBlock = document.createElement("div");
+      noteBlock.id = id;
       noteBlock.classList.add("node");
       noteBlock.innerHTML = `
         <div class="button-container">
@@ -145,43 +48,23 @@
       `;
 
       parentElement.appendChild(noteBlock);
-
-      const titleElement = noteBlock.querySelector(".note-title");
-      const contentElement = noteBlock.querySelector(".note-content");
-      contentElement.style.width = `${titleElement.offsetWidth}px`;
     }
 
-    function handleTitleKeydown(event) {
-      if (event.key === "Enter") {
-        event.preventDefault();
-      }
+    async function deleteNoteBlock(id) {
+      await db.collection("notes").doc(id).delete();
+      document.getElementById(id).remove();
     }
 
-    function handleTitlePaste(event) {
-      event.preventDefault();
-      const text = event.clipboardData.getData("text/plain");
-      const formattedText = text.replace(/\n/g, " ");
-      document.execCommand("insertText", false, formattedText);
+    async function updateTitle(id, newTitle) {
+      await db.collection("notes").doc(id).update({title: newTitle});
     }
 
-    function deleteNoteBlock(id) {
-      db.collection("notes").doc(id).delete().then(() => {
-        document.getElementById(id).remove();
-      });
+    async function updateContent(id, newContent) {
+      await db.collection("notes").doc(id).update({content: newContent});
     }
 
-    function updateTitle(id, newTitle) {
-      db.collection("notes").doc(id).update({
-        title: newTitle,
-      });
-    }
-
-    function updateContent(id, newContent) {
-      db.collection("notes").doc(id).update({
-        content: newContent,
-      });
-    }
-
+    // Call the loadNotes function when the page loads
+    window.onload = loadNotes;
   </script>
 </body>
 </html>
