@@ -39,7 +39,7 @@
       noteBlock.classList.add("node");
       noteBlock.innerHTML = `
         <div class="button-container">
-          <button onclick="event.stopPropagation(); createNewNoteBlock(this.parentNode.parentNode);">+</button>
+          <button onclick="event.stopPropagation(); createRootNoteBlock();">+</button>
           <button onclick="event.stopPropagation(); deleteNoteBlock('${id}');">x</button>
         </div>
         <div class="note-title" contenteditable="true" onkeydown="handleTitleKeydown(event)" onpaste="handleTitlePaste(event)" onblur="updateTitle('${id}', this.textContent)"><span>${noteText}</span></div>
