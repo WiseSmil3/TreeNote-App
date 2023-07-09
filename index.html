@@ -119,12 +119,13 @@
     }
 
     async function createRootNoteBlock() {
-      const noteText = prompt("Enter your note:");
+      const noteTitle = prompt("Enter your note title:");
+      const noteContent = prompt("Enter your note content:");
       const docRef = await db.collection("notes").add({
-        title: noteText || "New note",
-        content: "",
+        title: noteTitle || "New note",
+        content: noteContent || "",
       });
-      createNoteBlock(noteText || "New note", "", document.getElementById("root"), docRef.id);
+      createNoteBlock(noteTitle || "New note", noteContent || "", document.getElementById("root"), docRef.id);
     }
 
     function createNoteBlock(noteTitle, noteContent, parentElement, id) {
