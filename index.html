@@ -35,13 +35,21 @@
       white-space: pre-wrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+    }
+
+    .note-title span {
       font-weight: bold;
+      margin-right: 10px;
     }
 
     .note-content {
       border: 1px solid #000;
       border-radius: 5px;
       padding: 5px;
+      width: auto;
+      min-width: 100px;
     }
 
     .children {
@@ -81,47 +89,66 @@
   </style>
 </head>
 <body>
-  <div id="root">
-    <div class="node">
-      <div class="button-container">
-        <button onclick="event.stopPropagation(); createNewNoteBlock(this.parentNode.parentNode);">+</button>
-        <button onclick="event.stopPropagation(); deleteNoteBlock(this.parentNode.parentNode);">x</button>
-      </div>
-      <div class="note-title" contenteditable="true" onkeydown="handleTitleKeydown(event)" onpaste="handleTitlePaste(event)">New note</div>
-      <div class="note-content" contenteditable="true"></div>
-      <div class="children"></div>
-    </div>
-  </div>
-
+  <div id="root"></div>
   <div id="controls">
     <button onclick="createRootNoteBlock()">Add Root Note</button>
   </div>
-
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore.js"></script>
   <script>
+    // Your Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDvXCkb2zol2OAkJh5XRgMWCqXZNpuxf8A",
+      authDomain: "note-app-bc1c8.firebaseapp.com",
+      projectId: "note-app-bc1c8",
+      storageBucket: "note-app-bc1c8.appspot.com",
+      messagingSenderId: "137319797999",
+      appId: "1:137319797999:web:7466ab88111aae1a2cb71a",
+      measurementId: "G-CJSPMCTWJT"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // Initialize Firestore
+    const db = firebase.firestore();
+
+    // Load notes from Firestore and create elements for them
+    db.collection("notes").get().then((querySnapshot) => {
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        createNoteBlock(data.title, document.getElementById("root"), doc.id);
+      });
+    });
+
     function createRootNoteBlock() {
       const noteText = prompt("Enter your note:");
-      createNoteBlock(noteText || "New note", document.getElementById("root").querySelector(".children"));
+      db.collection("notes").add({
+        title: noteText || "New note",
+      })
+      .then((docRef) => {
+        createNoteBlock(noteText || "New note", document.getElementById("root"), docRef.id);
+      });
     }
 
-    function createNewNoteBlock(parentNode) {
-      const noteText = prompt("Enter your note:");
-      createNoteBlock(noteText || "New note", parentNode.querySelector(".children"));
-    }
-
-    function createNoteBlock(noteText, parentElement) {
+    function createNoteBlock(noteText, parentElement, id) {
       const noteBlock = document.createElement("div");
       noteBlock.classList.add("node");
       noteBlock.innerHTML = `
         <div class="button-container">
           <button onclick="event.stopPropagation(); createNewNoteBlock(this.parentNode.parentNode);">+</button>
-          <button onclick="event.stopPropagation(); deleteNoteBlock(this.parentNode.parentNode);">x</button>
+          <button onclick="event.stopPropagation(); deleteNoteBlock('${id}');">x</button>
         </div>
-        <div class="note-title" contenteditable="true" onkeydown="handleTitleKeydown(event)" onpaste="handleTitlePaste(event)">${noteText}</div>
-        <div class="note-content" contenteditable="true"></div>
+        <div class="note-title" contenteditable="true" onkeydown="handleTitleKeydown(event)" onpaste="handleTitlePaste(event)" onblur="updateTitle('${id}', this.textContent)"><span>${noteText}</span></div>
+        <div class="note-content" contenteditable="true" onblur="updateContent('${id}', this.textContent)"></div>
         <div class="children"></div>
       `;
 
       parentElement.appendChild(noteBlock);
+
+      const titleElement = noteBlock.querySelector(".note-title");
+      const contentElement = noteBlock.querySelector(".note-content");
+      contentElement.style.width = `${titleElement.offsetWidth}px`;
     }
 
     function handleTitleKeydown(event) {
@@ -137,9 +164,24 @@
       document.execCommand("insertText", false, formattedText);
     }
 
-    function deleteNoteBlock(noteBlock) {
-      noteBlock.parentNode.removeChild(noteBlock);
+    function deleteNoteBlock(id) {
+      db.collection("notes").doc(id).delete().then(() => {
+        document.getElementById(id).remove();
+      });
     }
+
+    function updateTitle(id, newTitle) {
+      db.collection("notes").doc(id).update({
+        title: newTitle,
+      });
+    }
+
+    function updateContent(id, newContent) {
+      db.collection("notes").doc(id).update({
+        content: newContent,
+      });
+    }
+
   </script>
 </body>
 </html>
